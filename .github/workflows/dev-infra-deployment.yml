@@ -33,10 +33,11 @@ jobs:
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
-        with:
-          create_credentials_file: true
-          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+        with:          
+          token_format: 'access_token'
           workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER_ID }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}          
+          access_token_lifetime: "1800s"
 
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v0.3.0
