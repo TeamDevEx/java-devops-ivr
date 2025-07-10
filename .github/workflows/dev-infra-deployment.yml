@@ -1,0 +1,133 @@
+defaults:
+  run:
+    working-directory: "tf-infra"
+
+name: Build Dev Infra and Dockerize Image
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+
+env:
+  image_tag: latest
+  environment: development
+  project_id: off-net-dev
+  repo_name: ivr-images
+
+jobs:
+  Build:
+    permissions:
+      contents: "read"
+      id-token: "write"
+
+    runs-on: ubuntu-latest
+    environment:
+      name: Development
+      url: "http://dev.test_demoApp.com"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          create_credentials_file: true
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER_ID }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v0.3.0
+
+      - name: Detect if app code changed
+        id: changes
+        run: |
+          git fetch origin main
+          MERGE_BASE=$(git merge-base HEAD origin/main)
+          if git diff --name-only $MERGE_BASE HEAD | grep -q '^src/'; then
+            echo "app_changed=true" >> $GITHUB_OUTPUT
+            echo "✅ Changes were made in Application!"
+          else
+            echo "app_changed=false" >> $GITHUB_OUTPUT
+            echo "ℹ️ No Changes were made in Application."
+          fi
+
+      - name: Set up JDK 17 for main branch
+        if: steps.changes.outputs.app_changed == 'true'
+        uses: actions/setup-java@v3
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      - name: Build JAR
+        if: steps.changes.outputs.app_changed == 'true'
+        run: mvn clean package -DskipTests
+        working-directory: ./
+
+      - name: Build & Push Docker Image
+        if: steps.changes.outputs.app_changed == 'true'
+        run: |
+          gcloud auth configure-docker northamerica-northeast1-docker.pkg.dev
+          docker build -t northamerica-northeast1-docker.pkg.dev/off-net-dev/ivr-images/ivr-app:$image_tag .
+          docker push northamerica-northeast1-docker.pkg.dev/off-net-dev/ivr-images/ivr-app:$image_tag
+        working-directory: ./
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+
+      - name: Terraform Format
+        id: fmt
+        run: terraform fmt -check
+
+      - name: Terraform Init
+        id: init
+        run: terraform init
+
+      - name: Terraform Validate
+        id: validate
+        run: terraform validate -no-color
+
+      - name: Terraform Plan
+        id: plan
+        if: github.event_name == 'pull_request'
+        run: terraform plan -no-color -input=false
+        continue-on-error: true
+
+      - uses: actions/github-script@v6
+        if: github.event_name == 'pull_request'
+        env:
+          PLAN: "terraform\n${{ steps.plan.outputs.stdout }}"
+        with:
+          github-token: ${{ secrets.GH_TOKEN }}
+          script: |
+            const output = `#### Terraform Format and Style 🖌\`${{ steps.fmt.outcome }}\`
+            #### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
+            #### Terraform Validation 🤖\`${{ steps.validate.outcome }}\`
+            #### Terraform Plan 📖\`${{ steps.plan.outcome }}\`
+
+            <details><summary>Show Plan</summary>
+
+            \`\`\`\n
+            ${process.env.PLAN}
+            \`\`\`
+
+            </details>
+
+            *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })
+
+      - name: Terraform Plan Status
+        if: steps.plan.outcome == 'failure'
+        run: exit 1
+
+      - name: Deploy (App Changed)
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: terraform apply -auto-approve -input=false
