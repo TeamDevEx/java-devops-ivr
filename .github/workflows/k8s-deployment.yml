@@ -1,0 +1,43 @@
+name: Build K8s deployment
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-deploy:
+    permissions:
+      contents: "read"
+      id-token: "write"
+
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          create_credentials_file: true
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER_ID }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v0.3.0
+        with:
+          project_id: off-net-dev
+
+      - name: Get GKE credentials
+        uses: google-github-actions/get-gke-credentials@v2
+        with:
+          cluster_name: java-ivr-app
+          location: northamerica-northeast1
+
+      - name: Ensure namespace exists
+        run: |
+          kubectl get namespace development || kubectl create namespace development
+          echo "Waiting for namespace to be fully created..."
+          sleep 5
+
+      - name: Deploy to GKE
+        run: |
+          kubectl apply -f k8s/deployment.yml
