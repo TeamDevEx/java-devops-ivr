@@ -38,8 +38,8 @@ jobs:
           workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER_ID }}
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
 
-      # - name: Set up Cloud SDK
-      #   uses: google-github-actions/setup-gcloud@v0.3.0
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v0.3.0
 
       - name: Detect if app code changed
         id: changes
