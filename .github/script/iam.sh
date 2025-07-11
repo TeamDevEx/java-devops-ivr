@@ -88,7 +88,7 @@ gcloud pubsub subscriptions create "$SUBSCRIPTION_NAME" \
   --project="$PROJECT_ID"
 
 # Create WIF
-gcloud iam workload-identity-pools create java-ivr-wif-pool --location="global" --project off-net-dev  
+gcloud iam workload-identity-pools create java-ivr-wif-pool --location="global" --project $PROJECT_ID  
 
 ## Repo level only attribute  
 gcloud iam workload-identity-pools providers create-oidc java-ivr-provider \
@@ -126,3 +126,5 @@ gcloud iam service-accounts add-iam-policy-binding java-devops-ivr@off-net-dev.i
   --role="roles/iam.workloadIdentityUser" \
   --member="serviceAccount:off-net-dev.svc.id.goog[development/gke-sa]"
 
+# Rollout
+kubectl rollout restart deployment ivr-app -n development
