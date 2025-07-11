@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ivr-app
+  namespace: development
+  labels:
+    app: ivr
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ivr
+  template:
+    metadata:
+      labels:
+        app: ivr
+    spec:
+      serviceAccountName: gke-sa
+      containers:
+        - name: ivr
+          image: northamerica-northeast1-docker.pkg.dev/off-net-dev/ivr-images/ivr-app:latest
+          ports:
+            - containerPort: 8080

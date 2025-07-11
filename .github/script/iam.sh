@@ -100,14 +100,29 @@ gcloud iam workload-identity-pools providers create-oidc java-ivr-provider \
   --project="off-net-dev"
 
 
-# Bind project SA to WIF
+# Bind repo project SA to WIF
+gcloud iam service-accounts add-iam-policy-binding java-devops-ivr@off-net-dev.iam.gserviceaccount.com \
+  --role roles/iam.workloadIdentityUser \
+  --member="principalSet://iam.googleapis.com/projects/541105984323/locations/global/workloadIdentityPools/java-ivr-wif-pool/attribute.repository/TeamDevEx/java-devops-ivr"
+
+## Connect to cluster
+gcloud container clusters get-credentials java-ivr-app --region northamerica-northeast1 --project off-net-dev
+
+## create cluster namespace
+kubectl create namespace development
+kubectl label namespace development \
+  "gke.io/managed-by-autopilot"="true" --overwrite
+
+# create gke SA
+kubectl create serviceaccount gke-sa -n development
+
+# Annotate GKE-SA/SA
+kubectl annotate serviceaccount gke-sa \
+  --namespace=development \
+  iam.gke.io/gcp-service-account=java-devops-ivr@off-net-dev.iam.gserviceaccount.com
+
+# Bind role
 gcloud iam service-accounts add-iam-policy-binding java-devops-ivr@off-net-dev.iam.gserviceaccount.com \
   --role="roles/iam.workloadIdentityUser" \
-  --member="principal://iam.googleapis.com/projects/541105984323/locations/global/workloadIdentityPools/java-ivr-wif-pool/subject/repo:TeamDevEx/java-devops-ivr:ref:refs/heads/main" \
-  --project="off-net-dev"
+  --member="serviceAccount:off-net-dev.svc.id.goog[development/gke-sa]"
 
-
-gcloud iam service-accounts add-iam-policy-binding java-devops-ivr@off-net-dev.iam.gserviceaccount.com \
-  --role="roles/iam.serviceAccountTokenCreator" \
-  --member="principal://iam.googleapis.com/projects/541105984323/locations/global/workloadIdentityPools/java-ivr-wif-pool/subject/repo:TeamDevEx/java-devops-ivr:ref:refs/heads/main" \
-  --project="off-net-dev"  
