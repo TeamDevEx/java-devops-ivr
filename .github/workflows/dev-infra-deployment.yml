@@ -33,13 +33,13 @@ jobs:
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
-        with:    
-          create_credentials_file: true          
+        with:
+          create_credentials_file: true
           workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER_ID }}
-          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}       
-          
-      - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v0.3.0
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      # - name: Set up Cloud SDK
+      #   uses: google-github-actions/setup-gcloud@v0.3.0
 
       - name: Detect if app code changed
         id: changes
