@@ -58,12 +58,19 @@ jobs:
           distribution: "temurin"
           java-version: "17"
 
+      - name: Cache Maven packages
+        if: steps.changes.outputs.app_changed == 'true'
+        uses: actions/cache@v2
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+
       - name: Run Junit test
         if: steps.changes.outputs.app_changed == 'true'
         run: |
-          mvn -Dtest=com.java.ivr.demo_ivr test | tee junit_output.log
-          echo "✅ JUnit Summary:"
-          grep -A 1 "Results :" junit_output.log | tail -n 2
+          echo "✅ JUnit Test:"
+          mvn -B -Dtest=com.java.ivr.demo_ivr test
         working-directory: ./
 
       - name: Build JAR
