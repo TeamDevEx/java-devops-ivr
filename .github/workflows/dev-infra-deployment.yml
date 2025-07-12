@@ -58,13 +58,21 @@ jobs:
           distribution: "temurin"
           java-version: "17"
 
-      - name: Build JAR
+      - name: Run Unit Tests
         if: steps.changes.outputs.app_changed == 'true'
+        run: |
+          mvn test | tee test-output.log
+          echo "📋 Maven Test Summary:"
+          grep --color=never "Tests run:" test-output.log | tail -1
+        working-directory: ./
+
+      - name: Build JAR
+        if: success() && steps.changes.outputs.app_changed == 'true'
         run: mvn clean package -DskipTests
         working-directory: ./
 
       - name: Build & Push Docker Image
-        if: steps.changes.outputs.app_changed == 'true'
+        if: success() && steps.changes.outputs.app_changed == 'true'
         run: |
           gcloud auth configure-docker northamerica-northeast1-docker.pkg.dev
           docker build -t northamerica-northeast1-docker.pkg.dev/off-net-dev/ivr-images/ivr-app:$image_tag .
