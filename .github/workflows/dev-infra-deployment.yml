@@ -58,13 +58,28 @@ jobs:
           distribution: "temurin"
           java-version: "17"
 
-      - name: Build JAR
+      - name: Cache Maven packages
         if: steps.changes.outputs.app_changed == 'true'
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+
+      - name: Run Junit test
+        if: steps.changes.outputs.app_changed == 'true'
+        run: |
+          echo "🔎 Running IVRServiceTest..."
+          mvn -B -Dtest=IVRServiceTest test
+        working-directory: ./
+
+      - name: Build JAR
+        if: success() && steps.changes.outputs.app_changed == 'true'
         run: mvn clean package -DskipTests
         working-directory: ./
 
       - name: Build & Push Docker Image
-        if: steps.changes.outputs.app_changed == 'true'
+        if: success() && steps.changes.outputs.app_changed == 'true'
         run: |
           gcloud auth configure-docker northamerica-northeast1-docker.pkg.dev
           docker build -t northamerica-northeast1-docker.pkg.dev/off-net-dev/ivr-images/ivr-app:$image_tag .
