@@ -60,7 +60,7 @@ jobs:
 
       - name: Cache Maven packages
         if: steps.changes.outputs.app_changed == 'true'
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: ~/.m2
           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
