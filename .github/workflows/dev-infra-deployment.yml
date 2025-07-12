@@ -58,12 +58,12 @@ jobs:
           distribution: "temurin"
           java-version: "17"
 
-      - name: Run Unit Tests
+      - name: Run Junit test
         if: steps.changes.outputs.app_changed == 'true'
         run: |
-          mvn test | tee test-output.log
-          echo "📋 Maven Test Summary:"
-          grep --color=never "Tests run:" test-output.log | tail -1
+          mvn -Dtest=com.java.ivr.demo_ivr test | tee junit_output.log
+          echo "✅ JUnit Summary:"
+          grep -A 1 "Results :" junit_output.log | tail -n 2
         working-directory: ./
 
       - name: Build JAR
