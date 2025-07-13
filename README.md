@@ -1,5 +1,7 @@
 # ☎️ Java IVR Microservice (GKE Autopilot)
 
+![Diagram](./assets/images/ivr.drawio.png)
+
 ## 📌 Overview
 
 This is a **Java Spring Boot microservice** designed to simulate an IVR (Interactive Voice Response) system. It operates in a secure, non-exposed environment within a GKE Autopilot cluster.
