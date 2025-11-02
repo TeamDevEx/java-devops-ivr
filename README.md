@@ -4,7 +4,7 @@
 
 ## 📌 Overview
 
-This is a **Java Spring Boot microservice** designed to simulate an IVR (Interactive Voice Response) system. It operates in a secure, non-exposed environment within a GKE Autopilot cluster.
+This is a **Java Spring Boot microservice** designed to simulate an IVR (Interactive Voice Response) system.
 
 ---
 
